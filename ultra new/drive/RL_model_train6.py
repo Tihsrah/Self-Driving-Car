@@ -79,6 +79,7 @@
 # model.learn(total_timesteps=1000)
 # model.save("ppo_torcs")
 
+import os
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3 import PPO
 from gym import Env
@@ -88,7 +89,13 @@ import numpy as np
 from PIL import ImageGrab
 import pyautogui
 import time
-import os
+
+def find_latest_model(directory):
+    saved_models = [f for f in os.listdir(directory) if f.startswith("best_model_")]
+    if not saved_models:
+        return None
+    latest_model = max(saved_models, key=lambda x: int(x.split('_')[-1].replace('.zip', '')))
+    return os.path.join(directory, latest_model)
 
 class TrainAndLoggingCallback(BaseCallback):
     def __init__(self, check_freq, save_path, verbose=1):
@@ -105,6 +112,7 @@ class TrainAndLoggingCallback(BaseCallback):
             model_path = os.path.join(self.save_path, 'best_model_{}'.format(self.n_calls))
             self.model.save(model_path)
         return True
+
 
 class TorcsEnv(Env):
     def __init__(self):
@@ -176,19 +184,71 @@ class TorcsEnv(Env):
         combined_image = cv2.addWeighted(image, 0.8, line_image, 1, 1)
         return combined_image, lines
 
+    # def get_reward(self, lines):
+    #     if lines is None:
+    #         return -1.0
+    #     num_lines = len(lines)
+    #     return 1.0 / (num_lines + 1)
+
     def get_reward(self, lines):
         if lines is None:
-            return -1.0
+            return -100  # You can set this to any other negative number too
         num_lines = len(lines)
-        return 1.0 / (num_lines + 1)
+        reward = 1.0 / (num_lines + 1)
+        
+        # Multiply reward by 100 to make it an integer
+        reward *= 100
+        
+        # Apply a threshold for negative reward
+        threshold = 8  # You can adjust this value based on your requirements
+        if reward < threshold:
+            return -1*num_lines  # Or any other negative value
+        
+        return int(reward)
+
+# CHECKPOINT_DIR = './train/'
+
+# # Adjust the saving frequency to every 100 steps
+# callback = TrainAndLoggingCallback(check_freq=100, save_path=CHECKPOINT_DIR)
+
+# env = TorcsEnv()
+
+# model = PPO("MlpPolicy", env, verbose=1)
+
+# try:
+#     model.learn(total_timesteps=1000, callback=callback)
+# except KeyboardInterrupt:
+#     print("Training was interrupted manually.")
+# finally:
+#     print("Saving the final model...")
+#     model.save("ppo_torcs_final")
+
+# print("Training and saving completed.")
 
 CHECKPOINT_DIR = './train/'
 
-callback = TrainAndLoggingCallback(check_freq=1, save_path=CHECKPOINT_DIR)
+# Check for the latest saved model in the directory
+latest_model_path = find_latest_model(CHECKPOINT_DIR)
 
+if latest_model_path:
+    print(f"Loading latest model from {latest_model_path}...")
+    model = PPO.load(latest_model_path, env=TorcsEnv())
+else:
+    print("No saved model found. Training from scratch.")
+    model = PPO("MlpPolicy", TorcsEnv(), verbose=1)
+
+# Your callback and environment setup
+callback = TrainAndLoggingCallback(check_freq=100, save_path=CHECKPOINT_DIR)
 env = TorcsEnv()
 
-model = PPO("MlpPolicy", env, verbose=1)
-model.learn(total_timesteps=10, callback=callback)
-model.save("ppo_torcs")
+# Continue or start new training
+try:
+    model.learn(total_timesteps=1000, callback=callback)
+except KeyboardInterrupt:
+    print("Training was interrupted manually.")
+finally:
+    print("Saving the final model...")
+    model.save("ppo_torcs_final")
+
+print("Training and saving completed.")
 
