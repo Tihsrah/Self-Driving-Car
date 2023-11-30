@@ -8,3 +8,4 @@ This project aims to implement a self-driving car using the TORCS simulator and 
 
 - TORCS Simulator
 - OpenAI Gym
+- etc
