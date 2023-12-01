@@ -10,6 +10,8 @@ from PIL import ImageGrab
 import pyautogui
 import time
 import torch
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 # Check if CUDA is available and set the device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if device.type == 'cuda':
@@ -92,19 +94,59 @@ class TorcsEnv(Env):
         print(f"Total steps in the last episode: {self.step_counter}")
         self.step_counter = 0
         return self.state
+    def check_any_word_on_screen(self,bbox, phrase):
+        # Capture a specific area of the screen
+        screen_capture = ImageGrab.grab(bbox=bbox)
 
+        # Use Tesseract to do OCR on the captured image
+        text = pytesseract.image_to_string(screen_capture).lower()
+
+        # Split the phrase into words and convert to lower case
+        words = phrase.lower().split()
+
+        # Initialize an empty list to store matched words
+        matched_words = []
+
+        # Check each word and add to the matched_words list if found in the text
+        for word in words:
+            if word in text:
+                matched_words.append(word)
+
+        # Return matched words
+        return matched_words
     def step(self, action):
+        # Increment step counter
         self.step_counter += 1
+
+        # Perform the action
         self.take_action(action)
+
+        # Update state and reward from the environment
         self.state, self.reward = self.get_state_reward()
+
+        # Update cumulative reward
         elapsed_time = time.time() - self.start_time
         self.cumulative_reward += self.reward
+
+        # Check if the episode is done (based on your condition, e.g., elapsed time)
         done = False
-        if elapsed_time >= 60:
+        if elapsed_time >= 60:  # Example condition for ending an episode
             done = True
             print(f"Total reward for the episode: {self.cumulative_reward}")
             self.reset()
 
+        # OCR check for specific words
+        bbox = (230, 80, 600, 150)  # Bounding box for screen capture
+        phrase = "Hit Wall laptime invalidated"
+        matched_words = self.check_any_word_on_screen(bbox, phrase)
+
+        # If any word is detected, reset the environment and apply penalty
+        if matched_words:
+            print(f"Detected word(s): {', '.join(matched_words)}. Resetting environment and applying penalty.")
+            self.cumulative_reward -= 1000  # Apply penalty to the cumulative reward
+            return self.reset(), -1000, True, {}
+
+        # Return the current state, reward, done flag, and additional info
         return self.state, self.reward, done, {}
 
     def take_action(self, action):
