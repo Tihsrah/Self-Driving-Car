@@ -10,4 +10,4 @@ This project aims to implement a self-driving car using the TORCS simulator and 
 - OpenAI Gym
 - etc
 
-![0001-0500](https://github.com/Tihsrah/Self-Driving-Car/assets/67807269/cf9c3ff2-19b0-4491-af0d-83c6725dda72)
+![0001-0500 (5)](https://github.com/Tihsrah/Self-Driving-Car/assets/67807269/1f1cf26d-6c40-42c1-b29a-fe1ac605f709)
