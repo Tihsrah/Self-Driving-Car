@@ -21,7 +21,7 @@ def run_model(model_path):
 
 try:
     # Provide the path to your saved model
-    saved_model_path = 'train\best_model_34000.zip'
+    saved_model_path = 'logs\best_model_16000.zip'
     if os.path.exists(saved_model_path):
         run_model(saved_model_path)
     else:

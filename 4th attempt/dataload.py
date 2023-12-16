@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 # Replace this with your actual filename
-filename = 'data\data_1701447401.pkl'
+filename = 'cleaned_data.pkl'
 
 # Load the data
 with open(filename, 'rb') as f:

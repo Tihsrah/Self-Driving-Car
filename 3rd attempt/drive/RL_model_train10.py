@@ -13,7 +13,7 @@ from gym.spaces import Box, Discrete
 import csv
 from stable_baselines3.common.logger import configure
 from torch.utils.tensorboard import SummaryWriter
-
+import keyboard
 # Configure Tesseract path
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
@@ -145,6 +145,12 @@ class TorcsEnv(Env):
             done = True
             print(f"Total reward for the episode: {self.cumulative_reward}")
             return self.reset(), 1000, done, {}
+
+        # Check for key press
+        if keyboard.is_pressed('k'):
+            print("Key 'k' pressed, resetting environment.")
+            return self.reset(), -1000, True, {}
+
 
         # OCR check for specific words (collision detection)
         bbox = (230, 80, 600, 150)  # Bounding box for screen capture
